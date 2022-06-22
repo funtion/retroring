@@ -1,0 +1,1 @@
+{"project_name": "retroring", "storage_account_name": "msralaphilly2", "container_name": "ml-la", "blob_storage_account_name": "msralaphilly2", "registry_name": "shufxi/amltproj", "local_path": "/home/shufxi/repo/retroring", "default_output_dir": "/home/shufxi/repo/retroring/amlt", "project_uuid": "7344122692.03834-0a56a864-e8af-4906-93d3-4f8f8fab438e", "version": "9.4.2.post1"}
