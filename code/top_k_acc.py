@@ -27,12 +27,12 @@ def isomer_match(preds, reac):
 
 def main():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--dataset', type=str, default='USPTO_50K')
+    parser.add_argument('--data', type=str, required=True)
     parser.add_argument('--result-file', type=str, required=True)
     
     args = parser.parse_args()
 
-    test_file = pd.read_csv('./data/%s/raw_test.csv' % args.dataset)
+    test_file = pd.read_csv('%s/raw_test.csv' % args.data)
     rxn_ps = [rxn.split('>>')[1] for rxn in test_file['reactants>reagents>production']]
 
     ground_truth = [demap(Chem.MolFromSmiles(rxn.split('>>')[0])) for rxn in test_file['reactants>reagents>production']]

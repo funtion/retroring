@@ -18,9 +18,6 @@ chiral_type_map_inv = {v:k for k, v in chiral_type_map.items()}
 
 a, b = 'a', 'b'
 
-
-
-
 def get_idx_map(mol):
     for atom in mol.GetAtoms():
         atom.SetAtomMapNum(atom.GetIdx())
@@ -105,8 +102,6 @@ def fix_reactant_atoms(product, reactants, matched_map, change_info):
         return tuple(fixed_mols)
     else:
         return None
-
-
 
 def decode_localtemplate(product, pred_site, template, template_info):
     if pred_site == None:
@@ -196,7 +191,7 @@ def main(args):
     atom_templates = pd.read_csv('%s/atom_templates.csv' % args['data'])
     bond_templates = pd.read_csv('%s/bond_templates.csv' % args['data'])
     template_infos = pd.read_csv('%s/template_infos.csv' % args['data'])
-    args['rxn_class_given'] = False 
+
     args['atom_templates'] = {atom_templates['Class'][i]: atom_templates['Template'][i] for i in atom_templates.index}
     args['bond_templates'] = {bond_templates['Class'][i]: bond_templates['Template'][i] for i in bond_templates.index}
     args['template_infos'] = {template_infos['Template'][i]: {'edit_site': eval(template_infos['edit_site'][i]), 'change_H': eval(template_infos['change_H'][i]), 'change_C': eval(template_infos['change_C'][i]), 'change_S': eval(template_infos['change_S'][i])} for i in template_infos.index}
@@ -210,7 +205,7 @@ def main(args):
                 continue
             raw_predictions[int(seps[0])] = seps[1:]
 
-    output_path =  os.path.join(args['output_path'], '/decoded_prediction.txt')
+    output_path = args['output_path']
 
     args['raw_predictions'] = raw_predictions
     # multi_processing
@@ -220,8 +215,7 @@ def main(args):
         tasks = range(len(raw_predictions))
         for result in tqdm(pool.imap_unordered(partial_func, tasks), total=len(tasks), desc='Decoding LocalRetro predictions'):
             result_dict[result[0]] = result[1]
-    
-        
+
     with open(output_path, 'w') as f1:
         for i in sorted(result_dict.keys()) :
             all_prediction = result_dict[i]
@@ -233,8 +227,8 @@ if __name__ == '__main__':
     parser = ArgumentParser('Decode Prediction')
     parser.add_argument('-d', '--data', required=True)
     parser.add_argument('-k', '--top-k', default=50, help='Number of top predictions')
-    parser.add_argument('--prediction-file', type=str)
-    parser.add_argument('--output-path', type=str)
+    parser.add_argument('-p', '--prediction-file', type=str)
+    parser.add_argument('-o', '--output-path', type=str)
     args = parser.parse_args().__dict__
     print(args)
-    main(args) 
+    main(args)
