@@ -44,4 +44,6 @@ jobs:
       --data $${AMLT_DATA_DIR}/data/uspto50k
       --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
       | tee $${AMLT_OUTPUT_DIR}/acc.txt
-
+  submit_args:
+      env:
+        { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }
