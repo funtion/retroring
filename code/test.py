@@ -1,3 +1,4 @@
+import os
 import torch
 from torch_geometric.loader import DataLoader
 import torch.nn.functional as F
@@ -112,14 +113,15 @@ def main():
 
     parser.add_argument("--test-ckpt", type=str, required=True)
     parser.add_argument("--result-path", type=str, required=True)
-    parser.add_argument("--smiles-path", type=str, required=True)
     parser.add_argument('--top_num', default=100, help='Num. of predictions to write')
+    parser.add_argument("--raw-data-path", type=str)
 
     args = parser.parse_args()
     print(args)
 
-    print("loading smiles from", args.smiles_path)
-    df = pd.read_csv(args.smiles_path)
+    smiles_path = os.path.join(args.raw_data_path, 'preprocessed_test.csv')
+    print("loading smiles from", smiles_path)
+    df = pd.read_csv(smiles_path)
     prods = df['Products'].values.tolist()
     smiles_list = []
     for prod in prods:
@@ -140,7 +142,7 @@ def main():
         else torch.device("cpu")
     )
 
-    dataset = USPTO50kTestDataset()
+    dataset = USPTO50kTestDataset(args.raw_data_path)
 
     test_loader = DataLoader(
         dataset,

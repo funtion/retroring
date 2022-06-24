@@ -1,5 +1,4 @@
 import multiprocessing
-import os
 from argparse import ArgumentParser
 from functools import partial
 
@@ -179,7 +178,9 @@ def get_k_predictions(test_id, args):
             if decoded_smiles == None or str((decoded_smiles, score)) in all_prediction:
                 continue
         except Exception as e:
-            print (e)
+            import traceback
+            print(e)
+            traceback.print_exc()
             continue
         all_prediction.append(str((decoded_smiles, score)))
 
@@ -226,7 +227,7 @@ def main(args):
 if __name__ == '__main__':      
     parser = ArgumentParser('Decode Prediction')
     parser.add_argument('-d', '--data', required=True)
-    parser.add_argument('-k', '--top-k', default=50, help='Number of top predictions')
+    parser.add_argument('-k', '--top-k', type=int, default=50, help='Number of top predictions')
     parser.add_argument('-p', '--prediction-file', type=str)
     parser.add_argument('-o', '--output-path', type=str)
     args = parser.parse_args().__dict__

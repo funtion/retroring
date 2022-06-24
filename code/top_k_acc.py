@@ -67,7 +67,7 @@ def main():
         Exact_matches.append(match_exact)
         MaxFrag_matches.append(match_maxfrag)
         if i % 100 == 0:
-            print('Calculating accuracy... %s/%s' % (i, len(results)), end='', flush=True)
+            print('Calculating accuracy... %s/%s' % (i, len(results)), flush=True)
 
     ks = [1, 3, 5, 10, 50]
     exact_k = {k:0 for k in ks}

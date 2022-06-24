@@ -34,7 +34,7 @@ search:
     - >-
       python -u train.py
       --batch-size {bsz} --dropout {dropout} --encoder-dropout 0.1
-      --pooler-dropout {poolerdropout} --init-face --use-bn --epochs 100 
+      --pooler-dropout {poolerdropout} --init-face --use-bn --epochs 150
       --num-layers {layers} --lr {lr} --weight-decay {wd}  --beta2 0.999 
       --mlp-hidden-size {mlp} --lr-warmup --use-adamw --node-attn --gradmultiply -1
       --seed 46
@@ -50,7 +50,7 @@ search:
   params:
     - name: bsz
       spec: discrete
-      values: [64]
+      values: [128]
     - name: dropout
       spec: discrete
       values: [0.3, 0.4]
@@ -65,7 +65,7 @@ search:
       values:  [0.01, 0.1]
     - name: layers
       spec: discrete
-      values: [3, 6]
+      values: [6, 9]
     - name: mlp
       spec: discrete
-      values: [256, 512]
+      values: [512]

@@ -141,7 +141,8 @@ class USPTO50kDataset(InMemoryDataset):
         )
 
 class USPTO50kTestDataset(InMemoryDataset):
-    def __init__(self, root="/tmp/dataset/uspto50ktest", transform=None, pre_transform=None):
+    def __init__(self, raw_data_folder, root="/tmp/dataset/uspto50ktest", transform=None, pre_transform=None):
+        self.raw_data_folder = raw_data_folder
         super().__init__(root, transform, pre_transform)
         self.data, self.slices = torch.load(self.processed_paths[0])
     
@@ -170,7 +171,7 @@ class USPTO50kTestDataset(InMemoryDataset):
         return "uspto50k_processed.pt"
     
     def download(self):
-        shutil.copy('../data/USPTO_50K/raw_test.csv', self.raw_paths[0])
+        shutil.copy( os.path.join(self.raw_data_folder, 'raw_test.csv'), self.raw_paths[0])
     
     def process(self):
 

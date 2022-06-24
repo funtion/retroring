@@ -5,12 +5,13 @@ target:
 
 environment:
   image: amlt-sing/pytorch-1.8.0 #teslazhu/torchgm:latest
-  image_setup:
+  setup:
   - pip install torch-scatter -f https://data.pyg.org/whl/torch-1.8.0+cu111.html
   - pip install torch-sparse==0.6.12 -f https://data.pyg.org/whl/torch-1.8.0+cu111.html
   - pip install torch-geometric==2.0.3
   - pip install ogb
   - pip install azureml-sdk
+  image_setup:
   - conda install -c conda-forge rdkit -y
 
 code:
@@ -32,7 +33,7 @@ jobs:
     --num-layers 6
     --mlp-hidden-size 256 --node-attn
     --result-path $${AMLT_OUTPUT_DIR}/test_output.txt
-    --smiles-path $${AMLT_DATA_DIR}/data/uspto50k/preprocessed_test.csv
+    --raw-data-path $${AMLT_DATA_DIR}/data/uspto50k
   - >- 
     python decode.py
     -d $${AMLT_DATA_DIR}/data/uspto50k
@@ -41,9 +42,9 @@ jobs:
     -o $${AMLT_OUTPUT_DIR}/decode_output.txt
   - >-
     python top_k_acc.py
-      --data $${AMLT_DATA_DIR}/data/uspto50k
-      --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
-      | tee $${AMLT_OUTPUT_DIR}/acc.txt
+    --data $${AMLT_DATA_DIR}/data/uspto50k
+    --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
+    | tee $${AMLT_OUTPUT_DIR}/acc.txt
   submit_args:
       env:
         { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }

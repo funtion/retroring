@@ -1,3 +1,5 @@
+from rdkit import Chem
+
 def demap(mols, stereo = True):
     if type(mols) == type((0, 0)):
         ss = []
