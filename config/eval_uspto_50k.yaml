@@ -74,3 +74,81 @@ jobs:
   submit_args:
       env:
         { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }
+- name: eval_3
+  sku: G1-P40-P100
+  command:
+  - >-
+    python test.py
+    --test-ckpt $${AMLT_MAP_INPUT_DIR}/checkpoint_best.pt
+    --batch-size 64 --dropout 0.4 --encoder-dropout 0.1
+    --pooler-dropout 0.1 --init-face --use-bn
+    --num-layers 6
+    --mlp-hidden-size 768 --latent-size 512 --node-attn
+    --result-path $${AMLT_OUTPUT_DIR}/test_output.txt
+    --raw-data-path $${AMLT_DATA_DIR}/data/uspto50k
+  - >- 
+    python decode.py
+    -d $${AMLT_DATA_DIR}/data/uspto50k
+    -k 50
+    -p $${AMLT_OUTPUT_DIR}/test_output.txt
+    -o $${AMLT_OUTPUT_DIR}/decode_output.txt
+  - >-
+    python top_k_acc.py
+    --data $${AMLT_DATA_DIR}/data/uspto50k
+    --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
+    | tee $${AMLT_OUTPUT_DIR}/acc.txt
+  submit_args:
+      env:
+        { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }
+- name: eval_4
+  sku: G1-P40-P100
+  command:
+  - >-
+    python test.py
+    --test-ckpt $${AMLT_MAP_INPUT_DIR}/checkpoint_best.pt
+    --batch-size 64 --dropout 0.3 --encoder-dropout 0.1
+    --pooler-dropout 0.1 --init-face --use-bn
+    --num-layers 6
+    --mlp-hidden-size 1024 --latent-size 512 --node-attn
+    --result-path $${AMLT_OUTPUT_DIR}/test_output.txt
+    --raw-data-path $${AMLT_DATA_DIR}/data/uspto50k
+  - >- 
+    python decode.py
+    -d $${AMLT_DATA_DIR}/data/uspto50k
+    -k 50
+    -p $${AMLT_OUTPUT_DIR}/test_output.txt
+    -o $${AMLT_OUTPUT_DIR}/decode_output.txt
+  - >-
+    python top_k_acc.py
+    --data $${AMLT_DATA_DIR}/data/uspto50k
+    --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
+    | tee $${AMLT_OUTPUT_DIR}/acc.txt
+  submit_args:
+      env:
+        { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }
+- name: eval_5
+  sku: G1-P40-P100
+  command:
+  - >-
+    python test.py
+    --test-ckpt $${AMLT_MAP_INPUT_DIR}/checkpoint_best.pt
+    --batch-size 64 --dropout 0.4 --encoder-dropout 0.1
+    --pooler-dropout 0.1 --init-face --use-bn
+    --num-layers 6
+    --mlp-hidden-size 768 --latent-size 512 --node-attn
+    --result-path $${AMLT_OUTPUT_DIR}/test_output.txt
+    --raw-data-path $${AMLT_DATA_DIR}/data/uspto50k
+  - >- 
+    python decode.py
+    -d $${AMLT_DATA_DIR}/data/uspto50k
+    -k 50
+    -p $${AMLT_OUTPUT_DIR}/test_output.txt
+    -o $${AMLT_OUTPUT_DIR}/decode_output.txt
+  - >-
+    python top_k_acc.py
+    --data $${AMLT_DATA_DIR}/data/uspto50k
+    --result-file $${AMLT_OUTPUT_DIR}/decode_output.txt
+    | tee $${AMLT_OUTPUT_DIR}/acc.txt
+  submit_args:
+      env:
+        { AMLT_DOCKERFILE_TEMPLATE: default, AMLT_NO_TENSORBOARD_PATCHING: 1 }
