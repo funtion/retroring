@@ -664,3 +664,82 @@ class GlobalAttn(nn.Module):
         x = scatter(x, index, dim=0, reduce="sum", dim_size=dim_size)
         return x
 
+
+# From local retro
+class MultiHeadAttention(nn.Module):
+    def __init__(self, heads, d_model, dropout = 0.1):
+        super(MultiHeadAttention, self).__init__()
+        self.d_model = d_model
+        self.d_k = d_model // heads
+        self.h = heads
+        self.q_linear = nn.Linear(d_model, d_model, bias=False)
+        self.v_linear = nn.Linear(d_model, d_model, bias=False)
+        self.k_linear = nn.Linear(d_model, d_model, bias=False)
+        self.dropout = nn.Dropout(dropout)
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+        self.reset_parameters()
+        
+    def reset_parameters(self):
+        for p in self.parameters():
+            if p.dim() > 1:
+                nn.init.xavier_uniform_(p)
+                
+    def attention(self, q, k, v, mask=None):
+        scores = torch.matmul(q, k.transpose(-2, -1)) /  math.sqrt(self.d_k)
+        if mask is not None:
+            mask = mask.unsqueeze(1).repeat(1,mask.size(-1),1)
+            mask = mask.unsqueeze(1).repeat(1,scores.size(1),1,1)
+            scores[~mask.bool()] = float(-9e15)
+        scores = torch.softmax(scores, dim=-1)
+        scores = self.dropout(scores) 
+        output = torch.matmul(scores, v)
+        return scores, output
+
+    def forward(self, x, mask=None):
+        bs = x.size(0)
+        k = self.k_linear(x).view(bs, -1, self.h, self.d_k)
+        q = self.q_linear(x).view(bs, -1, self.h, self.d_k)
+        v = self.v_linear(x).view(bs, -1, self.h, self.d_k)
+        k = k.transpose(1,2)
+        q = q.transpose(1,2)
+        v = v.transpose(1,2)
+        scores, output = self.attention(q, k, v, mask)
+        output = output.transpose(1,2).contiguous().view(bs, -1, self.d_model)
+        output = output + x
+        output = self.layer_norm(output)
+        return scores, output.squeeze(-1)
+
+class FeedForward(nn.Module):
+    def __init__(self, d_model, dropout = 0.1):
+        super(FeedForward, self).__init__()
+        self.net = nn.Sequential(
+            nn.Linear(d_model, d_model*2),
+            nn.ReLU(),
+            nn.Linear(d_model*2, d_model),
+            nn.Dropout(dropout)
+        )
+        self.layer_norm = nn.LayerNorm(d_model, eps=1e-6)
+        
+    def forward(self, x):
+        output = self.net(x)
+        return self.layer_norm(x + output)
+
+class Global_Reactivity_Attention(nn.Module):
+    def __init__(self, d_model, heads, n_layers = 1, dropout = 0.1):
+        super(Global_Reactivity_Attention, self).__init__()
+        self.n_layers = n_layers
+        att_stack = []
+        pff_stack = []
+        for _ in range(n_layers):
+            att_stack.append(MultiHeadAttention(heads, d_model, dropout))
+            pff_stack.append(FeedForward(d_model, dropout))
+        self.att_stack = nn.ModuleList(att_stack)
+        self.pff_stack = nn.ModuleList(pff_stack)
+        
+    def forward(self, x, mask):
+        scores = []
+        for n in range(self.n_layers):
+            score, x = self.att_stack[n](x, mask)
+            x = self.pff_stack[n](x)
+            scores.append(score)
+        return scores, x

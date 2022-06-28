@@ -115,6 +115,7 @@ def main():
     parser.add_argument("--result-path", type=str, required=True)
     parser.add_argument('--top_num', default=100, help='Num. of predictions to write')
     parser.add_argument("--raw-data-path", type=str)
+    parser.add_argument('--rank-logit', action='store_true')
 
     args = parser.parse_args()
     print(args)
@@ -209,8 +210,12 @@ def main():
         else:
             with torch.no_grad():
                 atom_pred, bond_pred = model(batch)
-                batch_atom_prob = F.softmax(atom_pred, dim=-1)
-                batch_bond_prob = F.softmax(bond_pred, dim=-1) 
+                if args.rank_logit:
+                    batch_atom_prob = atom_pred
+                    batch_bond_prob = bond_pred
+                else:
+                    batch_atom_prob = F.softmax(atom_pred, dim=-1)
+                    batch_bond_prob = F.softmax(bond_pred, dim=-1) 
 
                 graphs, nodes_sep, edges_sep = get_bg_partition(batch)
                 start_node = 0

@@ -138,6 +138,7 @@ def main():
     parser.add_argument("--global-attn", action="store_true", default=False)
     parser.add_argument("--seed", type=int, default=42)
     parser.add_argument("--gradmultiply", type=float, default=-1)
+    parser.add_argument("--gra-layers", type=int, default=0)
     parser.add_argument("--ap-hid-size", type=int, default=None)
     parser.add_argument("--ap-mlp-layers", type=int, default=None)
     parser.add_argument("--save-ckt", action="store_true", default=False)
@@ -216,6 +217,7 @@ def main():
         "gradmultiply": args.gradmultiply,
         "ap_hid_size": args.ap_hid_size,
         "ap_mlp_layers": args.ap_mlp_layers,
+        "gra_layers": args.gra_layers
     }
     if args.use_vn:
         model = GNNwithvn(**shared_params).to(device)
@@ -329,7 +331,7 @@ def main():
     print("Best validation score: {}".format(valid_curve[best_val_epoch]))
     print("Test score: {}".format(test_curve[best_val_epoch]))
 
-    shutil.copy(os.path.join(args.checkpoint_dir, f"checkpoint_{best_val_epoch}.pt"), os.path.join(args.checkpoint_dir, f"checkpoint_best.pt"))
+    shutil.copy(os.path.join(args.checkpoint_dir, f"checkpoint_{best_val_epoch+1}.pt"), os.path.join(args.checkpoint_dir, f"checkpoint_best.pt"))
 
 if __name__ == "__main__":
     main()

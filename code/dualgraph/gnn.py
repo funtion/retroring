@@ -1,5 +1,7 @@
+from cmath import e
 import torch
 from torch import nn
+from torch.nn.utils.rnn import pad_sequence
 from torch_geometric.nn import (
     global_add_pool,
     global_mean_pool,
@@ -17,6 +19,7 @@ from dualgraph.conv import (
     MetaLayer2,
     MetaLayer3,
     MLPwoLastAct,
+    Global_Reactivity_Attention
 )
 import torch.nn.functional as F
 from dualgraph.utils import GradMultiply
@@ -276,6 +279,7 @@ class GNN2(nn.Module):
         gradmultiply: float = -1,
         ap_hid_size: int = None,
         ap_mlp_layers: int = None,
+        gra_layers: int = 0,
     ):
         super().__init__()
 
@@ -377,6 +381,10 @@ class GNN2(nn.Module):
         #     dropout=pooler_dropout,
         #     use_bn=use_bn,
         # )
+    
+        self.gra_layers = gra_layers
+        if gra_layers > 0:
+            self.gra = Global_Reactivity_Attention(latent_size, 8, gra_layers)
         
         self.bond_head = MLPwoLastAct(
             latent_size,
@@ -525,18 +533,38 @@ class GNN2(nn.Module):
         if self.gradmultiply > 0:
             x = GradMultiply.apply(x, self.gradmultiply)
             edge_attr = GradMultiply.apply(edge_attr, self.gradmultiply)
-        return self.atom_head(x), self.bond_head(edge_attr)
         
-        if self.ddi:
-            return self.pooling(x, node_batch, size=num_graphs)
+        if self.gra_layers > 0:
+            edit_feats = []
+            masks = []
+            node_start = 0
+            edge_start = 0
+            for graph in batch.to_data_list():
+                e_feats = torch.cat((x[node_start: node_start + graph.num_nodes], edge_attr[edge_start: edge_start + graph.num_edges]), dim=0)
+                node_start += graph.num_nodes
+                edge_start += graph.num_edges
+                
+                mask = torch.ones(e_feats.shape[0], dtype=torch.uint8, device=e_feats.device)
+                edit_feats.append(e_feats)
+                masks.append(mask)
+            edit_feats = pad_sequence(edit_feats, batch_first=True, padding_value=0)
+            masks = pad_sequence(masks, batch_first=True, padding_value=0)
 
-        if self.gradmultiply > 0:
-            x = self.pooling(x, node_batch, size=num_graphs)
-            x = GradMultiply.apply(x, self.gradmultiply)
-            out = self.decoder(x)
+            attention_score, edit_feats = self.gra(edit_feats, masks)
+
+            atom_feats = []
+            bond_feats = []
+            for i, graph in enumerate(batch.to_data_list()):
+                atom_feats.append(edit_feats[i][:graph.num_nodes])
+                bond_feats.append(edit_feats[i][graph.num_nodes:graph.num_nodes + graph.num_edges])
+            
+            atom_feats = torch.cat(atom_feats, dim=0)
+            bond_feats = torch.cat(bond_feats, dim=0)
         else:
-            out = self.decoder(self.pooling(x, node_batch, size=num_graphs))
-        return out
+            atom_feats = x
+            bond_feats = edge_attr
+
+        return self.atom_head(atom_feats), self.bond_head(bond_feats)
 
     def get_last_layer(self, input):
         assert self.ddi
