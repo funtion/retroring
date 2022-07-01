@@ -280,6 +280,7 @@ class GNN2(nn.Module):
         ap_hid_size: int = None,
         ap_mlp_layers: int = None,
         gra_layers: int = 0,
+        edge_rep: str = 'e' # n, e, f, u
     ):
         super().__init__()
 
@@ -385,9 +386,11 @@ class GNN2(nn.Module):
         self.gra_layers = gra_layers
         if gra_layers > 0:
             self.gra = Global_Reactivity_Attention(latent_size, 8, gra_layers)
-        
+
+        self.edge_rep = edge_rep
+
         self.bond_head = MLPwoLastAct(
-            latent_size,
+            latent_size * (edge_rep.count('e') + edge_rep.count('f')*2 + edge_rep.count('n')*2 + edge_rep.count('u')),
             [latent_size] * ap_mlp_layers + [549],
             use_layer_norm=False,
             dropout=pooler_dropout,
@@ -418,6 +421,7 @@ class GNN2(nn.Module):
         self.dropout = dropout
         self.reset_parameters()
         self.gradmultiply = gradmultiply
+        
 
     def reset_parameters(self):
         if isinstance(self.encoder_node, nn.Linear):
@@ -534,6 +538,21 @@ class GNN2(nn.Module):
             x = GradMultiply.apply(x, self.gradmultiply)
             edge_attr = GradMultiply.apply(edge_attr, self.gradmultiply)
         
+        edge_rep = []
+        for r in self.edge_rep:
+            if r == 'e':
+                edge_rep.append(edge_attr)
+            elif r=='n':
+                edge_rep.append(x[edge_index[0]])
+                edge_rep.append(x[edge_index[1]])
+            elif r=='f':
+                edge_rep.append(face[face_index[0]])
+                edge_rep.append(face[face_index[1]])
+            elif r == 'u':
+                edge_rep.append(torch.repeat_interleave(u, num_edges, dim=0))
+        
+        edge_attr = torch.cat(edge_rep, dim=1)
+
         if self.gra_layers > 0:
             edit_feats = []
             masks = []
@@ -543,7 +562,7 @@ class GNN2(nn.Module):
                 e_feats = torch.cat((x[node_start: node_start + graph.num_nodes], edge_attr[edge_start: edge_start + graph.num_edges]), dim=0)
                 node_start += graph.num_nodes
                 edge_start += graph.num_edges
-                
+
                 mask = torch.ones(e_feats.shape[0], dtype=torch.uint8, device=e_feats.device)
                 edit_feats.append(e_feats)
                 masks.append(mask)

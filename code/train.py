@@ -23,11 +23,22 @@ except:
 
 from dualgraph.datasets.Uspto50k.dataset import USPTO50kDataset
 
-cls_criterion = torch.nn.CrossEntropyLoss() #torch.nn.BCEWithLogitsLoss()
-reg_criterion = torch.nn.MSELoss()
+def subsampled_cross_entropy(pred, label, ratio):
+    zero_idx = (label == 0)
+    templed_pred, template_label = pred[~zero_idx], label[~zero_idx]
+    zero_pred, zero_label = pred[zero_idx], label[zero_idx]
+    k = int(zero_pred.shape[0] * ratio)
+    k = max(k, 1)
+    _, zero_label_sample_idx = torch.topk(zero_pred[:, 0], k, largest=False, dim=0)
+    if zero_label_sample_idx.nelement() == 0:
+        return F.cross_entropy(pred, label, reduction='none')
+
+    full_pred = torch.cat((templed_pred, zero_pred[zero_label_sample_idx]), dim=0)
+    full_label = torch.cat((template_label, zero_label[zero_label_sample_idx]), dim=0)
+    return F.cross_entropy(full_pred, full_label, reduction='none')
 
 
-def train(model, device, loader, optimizer, task_type, scheduler, args):
+def train(model, device, loader, optimizer, task_type, scheduler, args, use_aml=False):
     model.train()
     loss_accum = 0
 
@@ -40,10 +51,15 @@ def train(model, device, loader, optimizer, task_type, scheduler, args):
         else:
             atom_pred, bond_pred = model(batch)
             optimizer.zero_grad()
-            
-            atom_loss = cls_criterion(atom_pred, batch.atom_label.long())
-            bond_loss = cls_criterion(bond_pred, batch.bond_label.long())
-            loss = (atom_loss + bond_loss) /2
+
+            if args.neg_sample_ratio == 0:
+                atom_loss = F.cross_entropy(atom_pred, batch.atom_label.long(), reduction='none')
+                bond_loss = F.cross_entropy(bond_pred, batch.bond_label.long(), reduction='none')
+            else:
+                atom_loss = subsampled_cross_entropy(atom_pred, batch.atom_label.long(), args.neg_sample_ratio)
+                bond_loss = subsampled_cross_entropy(bond_pred, batch.bond_label.long(), args.neg_sample_ratio)
+
+            loss = torch.cat((atom_loss, bond_loss), dim=0).mean()
 
             loss.backward()
             optimizer.step()
@@ -56,6 +72,10 @@ def train(model, device, loader, optimizer, task_type, scheduler, args):
                         loss_accum / (step + 1), scheduler.get_last_lr()[0]
                     )
                 )
+
+                if use_aml:
+                    Run.get_context().log("iter loss", loss_accum / (step + 1))
+                    Run.get_context().log('lr', scheduler.get_last_lr()[0])
 
 
 def eval(model, device, loader, evaluator):
@@ -143,6 +163,8 @@ def main():
     parser.add_argument("--ap-mlp-layers", type=int, default=None)
     parser.add_argument("--save-ckt", action="store_true", default=False)
     parser.add_argument("--raw-data-path", type=str)
+    parser.add_argument("--neg-sample-ratio", type=float, default=1.0)
+    parser.add_argument("--edge-rep", type=str, default="e") # n, e, f, u
 
     args = parser.parse_args()
     print(args)
@@ -217,7 +239,8 @@ def main():
         "gradmultiply": args.gradmultiply,
         "ap_hid_size": args.ap_hid_size,
         "ap_mlp_layers": args.ap_mlp_layers,
-        "gra_layers": args.gra_layers
+        "gra_layers": args.gra_layers,
+        "edge_rep": args.edge_rep,
     }
     if args.use_vn:
         model = GNNwithvn(**shared_params).to(device)
@@ -279,7 +302,7 @@ def main():
     for epoch in range(1, args.epochs + 1):
         print("=====Epoch {}".format(epoch))
         print("Training...")
-        train(model, device, train_loader, optimizer, dataset.task_type, scheduler, args)
+        train(model, device, train_loader, optimizer, dataset.task_type, scheduler, args, use_aml)
 
         print("Evaluating...")
         train_perf = eval(model, device, train_loader, evaluator)

@@ -5,7 +5,7 @@ python -u train.py \
 --pooler-dropout 0.1 --init-face --use-bn --epochs 100 \
 --num-layers 3 --lr 0.001 --weight-decay 0.01  --beta2 0.999 \
 --mlp-hidden-size 128 --lr-warmup --use-adamw --node-attn --gradmultiply -1 \
---gra-layers 1 \
+--edge-rep nefu \
 --seed 42 \
 --save-ckt \
 --log-interval 10 \

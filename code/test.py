@@ -110,12 +110,14 @@ def main():
     parser.add_argument("--ap-hid-size", type=int, default=None)
     parser.add_argument("--ap-mlp-layers", type=int, default=None)
     parser.add_argument("--save-ckt", action="store_true", default=False)
+    parser.add_argument("--gra-layers", type=int, default=0)
 
     parser.add_argument("--test-ckpt", type=str, required=True)
     parser.add_argument("--result-path", type=str, required=True)
     parser.add_argument('--top_num', default=100, help='Num. of predictions to write')
     parser.add_argument("--raw-data-path", type=str)
     parser.add_argument('--rank-logit', action='store_true')
+    parser.add_argument("--edge-rep", type=str, default="e") # n, e, f, u
 
     args = parser.parse_args()
     print(args)
@@ -184,6 +186,8 @@ def main():
         "gradmultiply": args.gradmultiply,
         "ap_hid_size": args.ap_hid_size,
         "ap_mlp_layers": args.ap_mlp_layers,
+        "gra_layers": args.gra_layers,
+        "edge_rep": args.edge_rep,
     }
     if args.use_vn:
         model = GNNwithvn(**shared_params).to(device)

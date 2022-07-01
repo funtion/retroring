@@ -23,7 +23,7 @@ data:
 
 search:
   job_template:
-    name: train_uspto50k_bsz{bsz}_drop{dropout}_pdrop{poolerdropout}_lr{lr}_wd{wd}_l{layers}_mlp{mlp}_latent{latent}
+    name: train_uspto50k_edge{edgerep}_bsz{bsz}_drop{dropout}_pdrop{poolerdropout}_lr{lr}_wd{wd}_l{layers}_mlp{mlp}_latent{latent}
     sku: G1-P40-P100
     command:
     - nvidia-smi
@@ -37,6 +37,7 @@ search:
       --pooler-dropout {poolerdropout} --init-face --use-bn --epochs 100
       --num-layers {layers} --lr {lr} --weight-decay {wd}  --beta2 0.999 
       --mlp-hidden-size {mlp} --latent-size {latent} --lr-warmup --use-adamw --node-attn --gradmultiply -1
+      --edge-rep {edgerep}
       --seed 46
       --save-ckt
       --log-interval 10
@@ -59,7 +60,7 @@ search:
       values: [0.2]
     - name: lr
       spec: discrete
-      values: [0.0005]
+      values: [0.0003, 0.0005]
     - name: wd
       spec: discrete
       values:  [0.1]
@@ -72,3 +73,6 @@ search:
     - name: latent
       spec: discrete
       values: [512]
+    - name: edgerep # n,e,f,u
+      spec: discrete
+      values: ["n", "ne", "nf", "nu", "nef", "neu", "nfu", "nefu", "e", "ef", "eu", "efu"]

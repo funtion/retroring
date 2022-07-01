@@ -23,7 +23,7 @@ data:
 
 search:
   job_template:
-    name: train_uspto50k_bsz{bsz}_drop{dropout}_pdrop{poolerdropout}_lr{lr}_wd{wd}_l{layers}_mlp{mlp}_latent{latent}
+    name: train_uspto50k_gra_bsz{bsz}_drop{dropout}_pdrop{poolerdropout}_lr{lr}_wd{wd}_l{layers}_mlp{mlp}_latent{latent}
     sku: G1-P40-P100
     command:
     - nvidia-smi
@@ -37,6 +37,7 @@ search:
       --pooler-dropout {poolerdropout} --init-face --use-bn --epochs 100
       --num-layers {layers} --lr {lr} --weight-decay {wd}  --beta2 0.999 
       --mlp-hidden-size {mlp} --latent-size {latent} --lr-warmup --use-adamw --node-attn --gradmultiply -1
+      --gra-layers 1
       --seed 46
       --save-ckt
       --log-interval 10
@@ -53,22 +54,22 @@ search:
       values: [64]
     - name: dropout
       spec: discrete
-      values: [0.3]
+      values: [0.3, 0.4]
     - name: poolerdropout
       spec: discrete
-      values: [0.2]
+      values: [0.1, 0.2]
     - name: lr
       spec: discrete
-      values: [0.0005]
+      values: [0.0001, 0.0002]
     - name: wd
       spec: discrete
       values:  [0.1]
     - name: layers
       spec: discrete
-      values: [6]
+      values: [3, 6]
     - name: mlp
       spec: discrete
-      values: [1024]
+      values: [512, 768, 1024]
     - name: latent
       spec: discrete
       values: [512]
