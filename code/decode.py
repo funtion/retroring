@@ -182,7 +182,12 @@ def get_k_predictions(test_id, args):
             print(e)
             traceback.print_exc()
             continue
-        all_prediction.append(str((decoded_smiles, score)))
+        if args['rxn_class_given']:
+            rxn_class = args['test_rxn_class'][test_id]
+            if template in args['templates_class'][str(rxn_class)].values:
+                all_prediction.append(str((decoded_smiles, score)))
+        else:
+            all_prediction.append(str((decoded_smiles, score)))
 
         if len (all_prediction) >= args['top_k']:
             break
@@ -192,6 +197,11 @@ def main(args):
     atom_templates = pd.read_csv('%s/atom_templates.csv' % args['data'])
     bond_templates = pd.read_csv('%s/bond_templates.csv' % args['data'])
     template_infos = pd.read_csv('%s/template_infos.csv' % args['data'])
+
+    if args['class']:
+        args['rxn_class_given'] = True
+        args['templates_class'] = pd.read_csv('%s/template_rxnclass.csv' % args['data'])
+        args['test_rxn_class'] = pd.read_csv( '%s/class_test.csv' % args['data'])['class']
 
     args['atom_templates'] = {atom_templates['Class'][i]: atom_templates['Template'][i] for i in atom_templates.index}
     args['bond_templates'] = {bond_templates['Class'][i]: bond_templates['Template'][i] for i in bond_templates.index}
@@ -221,7 +231,7 @@ def main(args):
         for i in sorted(result_dict.keys()) :
             all_prediction = result_dict[i]
             f1.write('\t'.join([str(i)] + all_prediction) + '\n')
-            print('Decoding LocalRetro predictions %d/%d' % (i, len(raw_predictions)), end='', flush=True)
+            print('Decoding LocalRetro predictions %d/%d' % (i, len(raw_predictions)), flush=True)
     print()
        
 if __name__ == '__main__':      
@@ -230,6 +240,7 @@ if __name__ == '__main__':
     parser.add_argument('-k', '--top-k', type=int, default=50, help='Number of top predictions')
     parser.add_argument('-p', '--prediction-file', type=str)
     parser.add_argument('-o', '--output-path', type=str)
+    parser.add_argument('--class', action='store_true')
     args = parser.parse_args().__dict__
     print(args)
     main(args)

@@ -38,6 +38,7 @@ search:
       --num-layers {layers} --lr {lr} --weight-decay {wd}  --beta2 0.999 
       --mlp-hidden-size {mlp} --latent-size {latent} --lr-warmup --use-adamw --node-attn --gradmultiply -1
       --edge-rep {edgerep}
+      --neg-sample-ratio 0.1
       --seed 46
       --save-ckt
       --log-interval 10
@@ -54,16 +55,16 @@ search:
       values: [64]
     - name: dropout
       spec: discrete
-      values: [0.3]
+      values: [0.3, 0.4]
     - name: poolerdropout
       spec: discrete
-      values: [0.2]
+      values: [0.2, 0.3]
     - name: lr
       spec: discrete
-      values: [0.0003, 0.0005]
+      values: [0.0002, 0.0003, 0.0005]
     - name: wd
       spec: discrete
-      values:  [0.1]
+      values: [0.1]
     - name: layers
       spec: discrete
       values: [6]
@@ -75,4 +76,4 @@ search:
       values: [512]
     - name: edgerep # n,e,f,u
       spec: discrete
-      values: ["n", "ne", "nf", "nu", "nef", "neu", "nfu", "nefu", "e", "ef", "eu", "efu"]
+      values: ["n", "ne"] # ["n", "ne", "nf", "nu", "nef", "neu", "nfu", "nefu", "e", "ef", "eu", "efu"]

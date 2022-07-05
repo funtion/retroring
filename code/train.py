@@ -29,7 +29,8 @@ def subsampled_cross_entropy(pred, label, ratio):
     zero_pred, zero_label = pred[zero_idx], label[zero_idx]
     k = int(zero_pred.shape[0] * ratio)
     k = max(k, 1)
-    _, zero_label_sample_idx = torch.topk(zero_pred[:, 0], k, largest=False, dim=0)
+    # _, zero_label_sample_idx = torch.topk(zero_pred[:, 0], k, largest=False, dim=0)
+    zero_label_sample_idx = torch.randperm(zero_pred.shape[0])[:k].to(zero_label.device)
     if zero_label_sample_idx.nelement() == 0:
         return F.cross_entropy(pred, label, reduction='none')
 
